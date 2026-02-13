@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# Virtual environments
+env/
+venv/
+.conda/
+
+# Output files you might regenerate
+# (Comment these out if you WANT to include them)
+# *.gif
+# *.png
+
+# MacOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Personal/temporary folders
+First attempt/
