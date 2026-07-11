@@ -32,10 +32,12 @@ device = get_device()
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results_raw")
 
 
-def get_adopted_ic(default="hard"):
-    """Read the IC formulation decided by exp08_ic_formulation.py.
+def get_adopted_ic(default="hard", default_w_ic=1000.0):
+    """Read the IC formulation (and, if soft, the winning w_ic) decided by
+    exp08_ic_formulation.py. Returns (ic, w_ic) -- w_ic is meaningless when
+    ic == 'hard' but always returned for a uniform call signature.
 
-    Falls back to `default` with a loud warning if exp08 hasn't been run yet
+    Falls back to defaults with a loud warning if exp08 hasn't been run yet
     -- exp06/exp07/exp09 should all be run AFTER exp08 (see IMPLEMENTATION_PLAN.md
     Phase 2 ordering note), but this keeps them runnable standalone too.
     """
@@ -43,12 +45,16 @@ def get_adopted_ic(default="hard"):
     if not os.path.exists(path):
         print(f"WARNING: {path} not found -- exp08 has not been run yet. "
               f"Falling back to ic='{default}'. Run exp08 first for the real decision.")
-        return default
+        return default, default_w_ic
     with open(path) as f:
         data = json.load(f)
     decision = data["decision"]
-    print(f"Adopted IC formulation (from exp08): {decision}")
-    return decision
+    w_ic = float(data.get("best_w_ic", default_w_ic))
+    if decision == "soft":
+        print(f"Adopted IC formulation (from exp08): soft, w_ic={w_ic}")
+    else:
+        print(f"Adopted IC formulation (from exp08): {decision}")
+    return decision, w_ic
 
 hbar = 1.0
 m = 1.0
