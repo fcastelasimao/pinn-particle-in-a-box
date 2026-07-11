@@ -53,6 +53,41 @@ bounded follow-up investigation was run before adopting it (owner-approved). Fin
   fix also rescues hard IC) — that would be additional scope beyond this investigation;
   flagged as a plausible but unverified mechanistic explanation, not a proven one.
 
+## Task 2.2 — 2D re-verification under the adopted formulation
+
+`experiments/exp02_pinn2d_comparison.py`, N=100 grid, 2000 epochs, px=-15 (the original
+2D headline setup). Single run each (2D comparison stays single-seed per the plan's
+seeds policy — expensive and qualitative). Raw logs: `/tmp/exp02_adopted_log.txt`,
+`/tmp/exp02_original_log.txt` (not committed; rerun via the commands below to
+reproduce). Figures: `figures/*_soft_w1.png` / `.gif` (adopted) and
+`figures/*_soft_w1000.png` / `.gif` (original weight).
+
+| Formulation | Mean rel. error | Final rel. error | PINN train+infer | Slowdown vs classical |
+|---|---|---|---|---|
+| Soft IC, w_ic=1 (**adopted**) | 99.96% | 99.82% | 267.2s | ~548x |
+| Soft IC, w_ic=1000 (original) | 99.78% | 99.37% | 292.6s | ~155x |
+
+**The headline failure holds under the adopted (measured-best) formulation — it fails
+under both.** Reproduce:
+```
+uv run experiments/exp02_pinn2d_comparison.py --formulation soft --w-ic 1.0 --epochs 2000
+uv run experiments/exp02_pinn2d_comparison.py --formulation soft --w-ic 1000.0 --epochs 2000
+```
+
+This is consistent with, not contradicted by, the 1D momentum sweep (Task 2.3): the 2D
+setup uses px=-15, far beyond the px=4 already showing 44% error in 1D, so near-total
+failure here is exactly what the spectral-bias trend predicts extrapolated to this
+momentum. The `PINNSolverHardIC` variant added to `qbox/pinn2d.py` for a possible
+hard-IC 2D re-run was NOT used for the headline claim — the 1D investigation
+(Task 2.1) found hard IC converges to a worse, non-propagating attractor, so re-running
+the weaker formulation in 2D would not have strengthened anything.
+
+Note on the slowdown factor: the classical solver's wall-clock time was noisy across
+runs (0.49s vs 1.88s for the identical deterministic computation) due to background
+system load during these runs (see session notes) -- the ~150-550x range should be read
+as "two-to-three orders of magnitude slower," not a precise multiplier. PINN training
+time itself (267s vs 293s) is the more reliable number.
+
 ## Task 2.3 — Momentum sweep (exp06_momentum_sweep.py)
 
 Adopted formulation (soft IC, w_ic=1), 5 seeds, 5000 epochs. Raw:
