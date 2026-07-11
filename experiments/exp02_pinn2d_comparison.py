@@ -3,13 +3,20 @@ Experiment 02: Traditional solver vs 2D PINN — the headline failure.
 =====================================================================
 
 Supports both IC formulations:
-  --formulation soft  : loss = loss_pde + 1000 * loss_ic (original).
-  --formulation hard   : psi = psi0 + t*net (added in Task 2.2 to re-verify
-                          the headline result against the formulation
-                          adopted in exp08_ic_formulation.py).
+  --formulation soft --w-ic 1.0     : the ADOPTED formulation (Task 2.2) --
+                                       exp08_ic_formulation.py found soft IC
+                                       with weight 1 beats every other option
+                                       tested, including hard IC, in 1D.
+  --formulation soft --w-ic 1000.0  : original, untested weight (default) --
+                                       kept as a comparison point.
+  --formulation hard                : psi = psi0 + t*net -- kept available
+                                       for reference, but NOT adopted (the
+                                       1D investigation found it converges to
+                                       a non-propagating attractor; see
+                                       RESULTS.md Task 2.1).
 
 Usage:
-  python experiments/exp02_pinn2d_comparison.py --formulation hard --epochs 2000
+  python experiments/exp02_pinn2d_comparison.py --formulation soft --w-ic 1.0 --epochs 2000
 """
 
 import argparse
@@ -31,11 +38,14 @@ FIGURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fi
 
 
 class SolverComparison:
-    def __init__(self, N=100, L=10.0, dt=0.001, formulation="soft"):
+    def __init__(self, N=100, L=10.0, dt=0.001, formulation="soft", w_ic=1000.0):
         self.N = N
         self.L = L
         self.dt = dt
         self.formulation = formulation
+        self.w_ic = w_ic
+        # label used in output filenames -- keeps soft/w=1000 and soft/w=1 runs separate
+        self.run_label = formulation if formulation == "hard" else f"soft_w{w_ic:g}"
 
         self.frames_traditional = None
         self.frames_pinn = None
@@ -83,7 +93,8 @@ class SolverComparison:
 
         if self.formulation == "soft":
             self.pinn_solver = PINNSolver(
-                self.sim_traditional.X, self.sim_traditional.Y, self.sim_traditional.V
+                self.sim_traditional.X, self.sim_traditional.Y, self.sim_traditional.V,
+                w_ic=self.w_ic
             )
             start_train = time.time()
             self.pinn_solver.train(
@@ -148,10 +159,10 @@ class SolverComparison:
             ax.text(bar.get_x() + bar.get_width()/2., height, f'{time_val:.1f}s',
                    ha='center', va='bottom', fontsize=11, fontweight='bold')
         ax.set_ylabel('Time (seconds)', fontsize=12)
-        ax.set_title(f'Computation Time Comparison ({self.formulation} IC)', fontsize=14, fontweight='bold')
+        ax.set_title(f'Computation Time Comparison ({self.run_label} IC)', fontsize=14, fontweight='bold')
         ax.grid(axis='y', alpha=0.3)
         plt.tight_layout()
-        save_path = os.path.join(FIGURES_DIR, f'timing_comparison_{self.formulation}.png')
+        save_path = os.path.join(FIGURES_DIR, f'timing_comparison_{self.run_label}.png')
         plt.savefig(save_path, dpi=150)
         print(f"Saved {save_path}")
 
@@ -166,11 +177,11 @@ class SolverComparison:
         ax2.plot(self.times, metrics['relative_errors']*100, 'b-', linewidth=2, label='Relative Error')
         ax2.fill_between(self.times, 0, metrics['relative_errors']*100, alpha=0.3, color='blue')
         ax2.set_xlabel('Time'); ax2.set_ylabel('Relative Error (%)')
-        ax2.set_title(f'Relative Error vs Time ({self.formulation} IC)', fontsize=13, fontweight='bold')
+        ax2.set_title(f'Relative Error vs Time ({self.run_label} IC)', fontsize=13, fontweight='bold')
         ax2.grid(True, alpha=0.3); ax2.legend()
 
         plt.tight_layout()
-        save_path = os.path.join(FIGURES_DIR, f'error_evolution_{self.formulation}.png')
+        save_path = os.path.join(FIGURES_DIR, f'error_evolution_{self.run_label}.png')
         plt.savefig(save_path, dpi=150)
         print(f"Saved {save_path}")
 
@@ -193,7 +204,7 @@ class SolverComparison:
         im2 = ax2.imshow(self.frames_pinn[0],
                         extent=[-self.L/2, self.L/2, -self.L/2, self.L/2],
                         cmap='plasma', vmin=0, vmax=vmax, origin='lower')
-        ax2.set_title(f'PINN Solver ({self.formulation} IC)', fontsize=13, fontweight='bold')
+        ax2.set_title(f'PINN Solver ({self.run_label} IC)', fontsize=13, fontweight='bold')
         plt.colorbar(im2, ax=ax2, label='|psi|^2')
 
         error_frame = np.abs(self.frames_traditional[0] - self.frames_pinn[0])
@@ -224,7 +235,7 @@ class SolverComparison:
         anim = FuncAnimation(fig, animate, frames=len(self.frames_traditional),
                            interval=100, blit=False, repeat=True)
 
-        save_path = os.path.join(FIGURES_DIR, f'comparison_{self.formulation}.gif')
+        save_path = os.path.join(FIGURES_DIR, f'comparison_{self.run_label}.gif')
         print(f"Saving animation as '{save_path}'...")
         anim.save(save_path, writer='pillow', fps=10)
         print("Saved.")
@@ -238,12 +249,12 @@ class SolverComparison:
         self.plot_timing_comparison()
         self.plot_error_evolution(metrics)
         if self.pinn_solver is not None and hasattr(self.pinn_solver, 'plot_loss'):
-            self.pinn_solver.plot_loss(save_path=os.path.join(FIGURES_DIR, f'pinn_loss_{self.formulation}.png'))
+            self.pinn_solver.plot_loss(save_path=os.path.join(FIGURES_DIR, f'pinn_loss_{self.run_label}.png'))
         self.create_comparison_animation()
 
         slowdown = (self.time_pinn_train + self.time_pinn_inference) / self.time_traditional
         print("\n" + "=" * 70)
-        print(f"SUMMARY ({self.formulation} IC formulation)")
+        print(f"SUMMARY ({self.run_label} IC formulation)")
         print(f"  Mean relative error: {metrics['mean_relative_error']*100:.2f}%")
         print(f"  Final relative error: {metrics['final_relative_error']*100:.2f}%")
         print(f"  Traditional time: {self.time_traditional:.2f}s")
@@ -256,8 +267,13 @@ class SolverComparison:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--formulation", choices=["soft", "hard"], default="soft")
+    parser.add_argument("--w-ic", type=float, default=1000.0,
+                         help="IC loss weight for --formulation soft. Task 2.2's adopted "
+                              "run uses 1.0 (the weight exp08_ic_formulation.py found best); "
+                              "the default 1000.0 reproduces the original untested weight.")
     parser.add_argument("--epochs", type=int, default=2000)
     args = parser.parse_args()
 
-    comparison = SolverComparison(N=100, L=10.0, dt=0.001, formulation=args.formulation)
+    comparison = SolverComparison(N=100, L=10.0, dt=0.001,
+                                   formulation=args.formulation, w_ic=args.w_ic)
     comparison.generate_full_report(epochs=args.epochs)

@@ -53,6 +53,77 @@ bounded follow-up investigation was run before adopting it (owner-approved). Fin
   fix also rescues hard IC) — that would be additional scope beyond this investigation;
   flagged as a plausible but unverified mechanistic explanation, not a proven one.
 
+## Task 2.3 — Momentum sweep (exp06_momentum_sweep.py)
+
+Adopted formulation (soft IC, w_ic=1), 5 seeds, 5000 epochs. Raw:
+`results_raw/exp06_momentum_sweep.json`. Figure: `figures/exp06_momentum_sweep.png`.
+
+| px | Mean error | Std |
+|---|---|---|
+| 0.5 | 0.57% | 0.07% |
+| 1.0 | 0.75% | 0.08% |
+| 2.0 | 2.17% | 0.18% |
+| 4.0 | **44.36%** | 1.95% |
+
+**Monotonic increase: confirmed.** Error stays under 1% through px=1, then grows
+steeply — 3x from px=1→2, another 20x from px=2→4. This is a much cleaner and more
+dramatic version of the hypothesized spectral-bias trend than the original single-point
+(px=1) result suggested, and it's now measured against the strongest (adopted) IC
+formulation rather than the confounded one.
+
+## Task 2.4 — Norm/unitarity constraint (exp07_norm_constraint.py)
+
+Adopted formulation (soft IC, w_ic=1), 5 seeds, 5000 epochs, λ=1.0 headline. Raw:
+`results_raw/exp07_norm_constraint.json`. Figure: `figures/exp07_norm_constraint.png`.
+
+| px | Baseline | +norm constraint (λ=1) |
+|---|---|---|
+| 1.0 | 0.75% ± 0.08% | 3.01% ± 0.37% (worse) |
+| 4.0 | 44.36% ± 1.95% | 70.28% ± 7.04% (worse) |
+
+λ sensitivity (px=4, 3 seeds): λ=0.1 → 35.40% ± 1.67% (slightly better than baseline);
+λ=1.0 → 70.28% (worse); λ=10.0 → 94.78% ± 3.57% (much worse). The conclusion is
+λ-dependent, not just a headline-λ artifact.
+
+**Result: the constraint does what it's designed to do, but that's not enough to help
+overall.** The N(t) curves (`figures/exp07_norm_constraint.png`, right column) show the
+mechanism working exactly as hypothesized at px=4: baseline norm genuinely decays
+(N(t): 0.76 → ~0.0 by t=1 — real amplitude collapse), and the constraint holds it much
+closer to 1 (0.93–0.99 throughout). But the |ψ|² snapshots (left column) show the
+constrained network trades fine oscillatory/interference structure for that norm
+compliance — it collapses the true multi-peaked pattern into a single broad hump. Net
+effect: worse overall accuracy despite fixing the specific pathology (amplitude decay)
+it targeted. At px=1 there's no meaningful amplitude decay to fix under the adopted
+formulation (baseline N(t) is already ≈0.997–1.001), so the constraint only adds a
+competing loss term and purely hurts.
+
+This revises the original hypothesis ("fixes amplitude, doesn't fix phase — a clean
+separation") into something more specific: amplitude decay (mechanism A) is real and
+fixable at high momentum, but fixing it via an added penalty term costs representational
+capacity elsewhere, so it doesn't rescue accuracy net. A smarter integration (e.g. a
+hard normalization layer instead of a soft penalty) might avoid that trade-off — flagged
+as future work, not attempted here (out of scope).
+
+## Task 2.5 — Causal training (exp09_causal_training.py)
+
+Adopted formulation (soft IC, w_ic=1), 5 seeds, 5000 epochs, ε=10 (no adjustment
+needed). Raw: `results_raw/exp09_causal_training.json`. Figure:
+`figures/exp09_causal_training.png`.
+
+| px | Baseline | +causal training | Substantially improved? |
+|---|---|---|---|
+| 1.0 | 0.75% ± 0.08% | 0.76% ± 0.06% | No |
+| 4.0 | 44.36% ± 1.95% | 45.44% ± 2.61% | No |
+
+**Result: causal training has no effect either way, under the adopted formulation.**
+This is a different (and cleaner) outcome than the original hypothesis anticipated,
+because the premise changed: causal training was meant to fix a "packet doesn't move"
+propagation failure at px=1, but that failure was specific to the (rejected) hard-IC
+formulation (see Task 2.1) — under soft IC, px=1 already has essentially no error
+(0.75%) to fix. At px=4, where real error remains, causal training doesn't move the
+needle, consistent with that residual error being spectral bias (mechanism C, confirmed
+directly by Task 2.3) rather than a causality artifact.
+
 ## Task 2.6 — Multi-seed error bars: exp04 (eigenstates), exp05 (inverse problem)
 
 5 seeds (0-4), `experiments/exp04_eigenstates.py --seed N` / `exp05_inverse_potential.py --seed N`.

@@ -97,10 +97,14 @@ class SchrodingerPINN(nn.Module):
 class PINNSolver:
     """
     PINN solver for the 2D time-dependent Schrödinger equation.
-    SOFT initial condition: loss = loss_pde + 1000.0 * loss_initial.
+    SOFT initial condition: loss = loss_pde + w_ic * loss_initial.
+
+    w_ic defaults to 1000.0 (the original, untested weight). Task 2.2 in
+    IMPLEMENTATION_PLAN.md re-runs this with w_ic=1.0, the weight
+    exp08_ic_formulation.py found actually wins in the 1D study.
     """
 
-    def __init__(self, X, Y, V, hbar=1.0, m=1.0):
+    def __init__(self, X, Y, V, hbar=1.0, m=1.0, w_ic=1000.0):
         """
         Initialize the PINN solver.
 
@@ -112,12 +116,15 @@ class PINNSolver:
             Potential landscape
         hbar, m : float
             Physical constants
+        w_ic : float
+            Weight on the initial-condition loss term.
         """
         self.X = X
         self.Y = Y
         self.V = V
         self.hbar = hbar
         self.m = m
+        self.w_ic = w_ic
 
         # Extract grid properties
         self.N = X.shape[0]
@@ -269,7 +276,7 @@ class PINNSolver:
                                  (psi_imag_pred - psi_initial_imag)**2)
 
         # Total loss (weight initial condition more heavily)
-        total_loss = loss_pde + 1000.0 * loss_initial
+        total_loss = loss_pde + self.w_ic * loss_initial
 
         return total_loss, loss_pde, loss_initial
 
