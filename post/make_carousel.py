@@ -16,7 +16,6 @@ import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 from matplotlib.backends.backend_pdf import PdfPages
 from PIL import Image, ImageSequence
 
@@ -71,40 +70,51 @@ def best_gif_frame(gif_path, frac=0.55):
 
 def slide1_hook(pdf):
     fig = new_slide()
-    ax_img = fig.add_axes([0.05, 0.30, 0.9, 0.62])
+
+    fig.text(0.5, 0.97, "I tried to replace this quantum solver\nwith a neural network.",
+              ha="center", va="top", fontsize=19, fontweight="bold", color=FG)
+
+    ax_img = fig.add_axes([0.06, 0.22, 0.88, 0.52])
     ax_img.axis("off")
     frame = best_gif_frame(os.path.join(FIGURES, "traditional_solver.gif"))
     ax_img.imshow(frame)
 
-    fig.text(0.5, 0.94, "I tried to replace this quantum solver\nwith a neural network.",
-              ha="center", va="top", fontsize=22, fontweight="bold", color=FG)
-    fig.text(0.5, 0.12, "It failed. That was the interesting part.",
+    fig.text(0.5, 0.14, "It failed. That was the interesting part.",
               ha="center", va="top", fontsize=17, color=ACCENT, style="italic")
-    fig.text(0.5, 0.03, "swipe -->", ha="center", fontsize=11, color="#8b949e")
+    fig.text(0.5, 0.04, "swipe -->", ha="center", fontsize=11, color="#8b949e")
     pdf.savefig(fig, facecolor=BG)
     plt.close(fig)
 
 
-def slide2_failure(pdf, exp02_hard, exp02_soft):
+def failure_comparison_crop():
+    """Traditional vs PINN panels only (drop the busy error-map panel), from
+    late in the simulation where the PINN's missing fine structure is clearest."""
+    im = Image.open(os.path.join(FIGURES, "comparison_soft_w1.gif"))
+    frames = [f.copy().convert("RGB") for f in ImageSequence.Iterator(im)]
+    frame = frames[int(len(frames) * 0.9)]
+    return frame.crop((150, 110, 2380, 1150))
+
+
+def slide2_failure(pdf, exp02_adopted, exp02_original):
     fig = new_slide()
     fig.text(0.5, 0.95, "The failure", ha="center", fontsize=24, fontweight="bold", color=FG)
 
     ax_img = fig.add_axes([0.08, 0.42, 0.84, 0.46])
     ax_img.axis("off")
-    img = mpimg.imread(os.path.join(FIGURES, "error_evolution_hard.png"))
+    img = failure_comparison_crop()
     ax_img.imshow(img)
+    ax_img.text(0.5, -0.06, "Truth (left) has fine interference fringes the PINN (right) can't represent.",
+                transform=ax_img.transAxes, ha="center", va="top", fontsize=9, color="#8b949e")
 
-    err = exp02_hard["mean_relative_error_pct"]
-    slowdown = exp02_hard["slowdown_factor"]
-    both_fail = exp02_soft is not None
+    err = exp02_adopted["mean_relative_error_pct"]
+    slowdown = exp02_adopted["slowdown_factor"]
 
     fig.text(0.5, 0.32, f"{err:.0f}%", ha="center", fontsize=48, fontweight="bold", color=ACCENT3)
     fig.text(0.5, 0.24, "mean relative error vs the classical solver", ha="center", fontsize=13, color=FG)
-    fig.text(0.5, 0.16, f"{slowdown:.0f}x slower to train than the classical solver ran, total",
+    fig.text(0.5, 0.16, f"~{slowdown:.0f}x slower to train, for a wrong answer",
               ha="center", fontsize=13, color=FG)
-    if both_fail:
-        fig.text(0.5, 0.07, "Fails under both a soft and a hard initial condition.",
-                  ha="center", fontsize=11, color="#8b949e", style="italic")
+    fig.text(0.5, 0.07, "Fails under the best initial-condition formulation tested,\nnot just a weak strawman.",
+              ha="center", fontsize=11, color="#8b949e", style="italic")
     pdf.savefig(fig, facecolor=BG)
     plt.close(fig)
 
@@ -138,7 +148,7 @@ def slide4_fixes(pdf, exp07, exp09, exp06):
     rows = [
         ("Amplitude decay", "unitarity constraint", exp07),
         ("Causality violation", "causal training", exp09),
-        ("Spectral bias", "(not attempted this round)", None),
+        ("Spectral bias", "diagnosed, not fixed", None),
     ]
 
     y0 = 0.80
@@ -148,14 +158,14 @@ def slide4_fixes(pdf, exp07, exp09, exp06):
         fig.text(0.08, y - 0.045, fix, fontsize=11, color="#8b949e", style="italic")
         if data is not None:
             verdict = data.get("verdict", "")
-            fig.text(0.55, y - 0.01, verdict, fontsize=11, color=FG, wrap=True)
+            fig.text(0.55, y - 0.01, verdict, fontsize=10.5, color=FG, va="top")
         else:
-            fig.text(0.55, y - 0.01, "Architecture change needed (Fourier features / SIREN)\n"
-                                       "-- flagged as future work, not attempted here.",
-                     fontsize=11, color=FG)
+            fig.text(0.55, y - 0.01, "Confirmed dominant cause\n(momentum sweep). Needs a\n"
+                                       "different architecture --\nfuture work, not attempted.",
+                     fontsize=10.5, color=FG, va="top")
 
-    fig.text(0.5, 0.06, "Physics constraints fix some failure modes. Spectral bias needs a\n"
-                        "different architecture -- deliberately out of scope this round.",
+    fig.text(0.5, 0.05, "Neither physics-constraint fix rescued accuracy once the\n"
+                        "IC-formulation confound was corrected. Spectral bias is the story.",
               ha="center", fontsize=11, color="#8b949e", style="italic")
     pdf.savefig(fig, facecolor=BG)
     plt.close(fig)
@@ -164,9 +174,10 @@ def slide4_fixes(pdf, exp07, exp09, exp06):
 def slide5_win(pdf, exp05):
     fig = new_slide()
     fig.text(0.5, 0.95, "Where PINNs win", ha="center", fontsize=24, fontweight="bold", color=FG)
-    ax_img = fig.add_axes([0.06, 0.42, 0.88, 0.46])
+    ax_img = fig.add_axes([0.10, 0.42, 0.80, 0.46])
     ax_img.axis("off")
-    img = mpimg.imread(os.path.join(FIGURES, "exp05_inverse_potential.png"))
+    full = Image.open(os.path.join(FIGURES, "exp05_inverse_potential.png"))
+    img = full.crop((0, 90, 900, full.size[1]))
     ax_img.imshow(img)
 
     mean_err = exp05["mean_pct"]
@@ -213,31 +224,30 @@ def main():
 
     def norm_verdict(d):
         s = d["summary"]
-        lines = []
+        lines = ["Fixes amplitude decay (N(t)\nconfirms it), but costs detail:"]
         for px, row in s.items():
-            fixed = row["constrained_mean"] < row["baseline_mean"] * 0.9
-            lines.append(f"px={px}: {'improved' if fixed else 'no significant change'}")
+            delta = f"{row['baseline_mean']:.1f}%->{row['constrained_mean']:.1f}%"
+            lines.append(f"px={px}: {delta} (worse)")
         return "\n".join(lines)
 
     def causal_verdict(d):
         s = d["summary"]
         lines = []
         for px, row in s.items():
-            lines.append(f"px={px}: {'rescued' if row['improved'] else 'no rescue'}")
+            lines.append(f"px={px}: {'rescued' if row['improved'] else 'no effect'}")
         return "\n".join(lines)
 
     exp07 = {"verdict": norm_verdict(exp07_raw)}
     exp09 = {"verdict": causal_verdict(exp09_raw)}
 
-    # exp02 headline numbers -- must be filled in from RESULTS.md / manual run
-    # (Task 2.2). Loaded from results_raw/exp02_summary.json, written by hand
-    # or by a small helper after running exp02 --formulation hard/soft.
+    # exp02 headline numbers, written from the Task 2.2 runs into
+    # results_raw/exp02_summary.json (see RESULTS.md Task 2.2).
     exp02 = load_json("exp02_summary.json")
 
     out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "carousel.pdf")
     with PdfPages(out_path) as pdf:
         slide1_hook(pdf)
-        slide2_failure(pdf, exp02["hard"], exp02.get("soft"))
+        slide2_failure(pdf, exp02["adopted"], exp02["original_weight"])
         slide3_diagnosis(pdf, exp06)
         slide4_fixes(pdf, exp07, exp09, exp06)
         slide5_win(pdf, exp05)
