@@ -10,6 +10,11 @@ __pycache__/
 env/
 venv/
 .conda/
+.venv/
+
+# results_raw/ holds per-run JSON scratch data used to compile RESULTS.md;
+# not meant to be committed (regenerate by re-running the experiments).
+results_raw/
 
 # Output files you might regenerate
 # (Comment these out if you WANT to include them)
@@ -25,4 +30,4 @@ venv/
 *.swp
 
 # Personal/temporary folders
-First attempt/
+archive/
