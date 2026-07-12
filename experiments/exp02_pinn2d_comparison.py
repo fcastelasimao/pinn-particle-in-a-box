@@ -70,9 +70,8 @@ class SolverComparison:
             radius=2.0, thickness=0.2, V_barrier=100,
             slit_angle_1=-5, slit_angle_2=5, slit_width=0.05
         )
-        psi_initial = self.sim_traditional.initialize_wave_packet(
-            x0=3.75, y0=0, sigma=0.5, px=-15, py=0
-        )
+        self.wave_packet_params = dict(x0=3.75, y0=0, sigma=0.5, px=-15, py=0)
+        psi_initial = self.sim_traditional.initialize_wave_packet(**self.wave_packet_params)
         print(f"Grid size: {self.N}x{self.N} | Box size: {self.L} | formulation={self.formulation}")
         return psi_initial
 
@@ -103,7 +102,8 @@ class SolverComparison:
             )
         else:
             self.pinn_solver = PINNSolverHardIC(
-                self.sim_traditional.X, self.sim_traditional.Y, self.sim_traditional.V
+                self.sim_traditional.X, self.sim_traditional.Y, self.sim_traditional.V,
+                **self.wave_packet_params
             )
             start_train = time.time()
             self.pinn_solver.train(

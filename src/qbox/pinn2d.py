@@ -432,24 +432,40 @@ class PINNSolverHardIC:
     HARD initial condition: psi(x,y,t) = psi0(x,y) + t * net(x,y,t).
     No IC loss term, no IC weight — added in Task 2.2 to re-verify the 2D
     headline result against the formulation adopted in exp08_ic_formulation.py.
+
+    psi0 is the closed-form Gaussian * plane wave from
+    QuantumSimulator.initialize_wave_packet (x0, y0, sigma, px, py must match
+    the call that produced psi_initial), evaluated directly in torch so the
+    PDE residual sees d(psi0)/dx, d(psi0)/dy via autograd. An earlier version
+    looked psi0 up by nearest grid point from a numpy array, which is
+    piecewise-constant and has zero spatial derivative almost everywhere --
+    the same class of bug fixed in _common1d.py's 1D hard-IC solver (see
+    RESULTS.md Task 2.1).
     """
 
-    def __init__(self, X, Y, V, hbar=1.0, m=1.0):
+    def __init__(self, X, Y, V, hbar=1.0, m=1.0, x0=0.0, y0=0.0, sigma=0.5, px=2.0, py=0.0):
         self.X = X
         self.Y = Y
         self.V = V
         self.hbar = hbar
         self.m = m
+        self.x0, self.y0, self.sigma, self.px, self.py = x0, y0, sigma, px, py
 
         self.N = X.shape[0]
         self.L = X.max() - X.min()
+        dx = self.L / self.N
+        gaussian = np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))
+        self._psi0_norm = float(np.sqrt(np.sum(gaussian ** 2) * dx * dx))
 
         self.model = Net2DDelta(hidden_size=128, n_layers=4).to(device)
         self.optimizer = Adam(self.model.parameters(), lr=1e-3)
         self.loss_history = []
 
-        self.psi0_real = None
-        self.psi0_imag = None
+    def _psi0_torch(self, x, y):
+        gaussian = torch.exp(-((x - self.x0) ** 2 + (y - self.y0) ** 2) / (2 * self.sigma ** 2))
+        gaussian = gaussian / self._psi0_norm
+        phase = (self.px * x + self.py * y) / self.hbar
+        return gaussian * torch.cos(phase), gaussian * torch.sin(phase)
 
     def potential(self, x, y):
         x_np = x.detach().cpu().numpy().flatten()
@@ -459,20 +475,8 @@ class PINNSolverHardIC:
         V_vals = self.V[y_idx, x_idx]
         return torch.tensor(V_vals, dtype=torch.float32, device=device).reshape(-1, 1)
 
-    def psi0_at(self, x, y):
-        """Nearest-grid-point lookup of psi0 (same interpolation style as potential())."""
-        x_np = x.detach().cpu().numpy().flatten()
-        y_np = y.detach().cpu().numpy().flatten()
-        x_idx = np.clip(((x_np + self.L/2) / self.L * (self.N-1)).astype(int), 0, self.N-1)
-        y_idx = np.clip(((y_np + self.L/2) / self.L * (self.N-1)).astype(int), 0, self.N-1)
-        r_vals = self.psi0_real[y_idx, x_idx]
-        i_vals = self.psi0_imag[y_idx, x_idx]
-        r_t = torch.tensor(r_vals, dtype=torch.float32, device=device).reshape(-1, 1)
-        i_t = torch.tensor(i_vals, dtype=torch.float32, device=device).reshape(-1, 1)
-        return r_t, i_t
-
     def full_psi(self, x, y, t):
-        psi0_r, psi0_i = self.psi0_at(x, y)
+        psi0_r, psi0_i = self._psi0_torch(x, y)
         delta_r, delta_i = self.model(x, y, t)
         psi_r = psi0_r + t * delta_r
         psi_i = psi0_i + t * delta_i
@@ -515,11 +519,10 @@ class PINNSolverHardIC:
         return residual_real, residual_imag
 
     def train(self, psi_initial, t_max=1.0, n_collocation=2000, epochs=5000):
+        # psi_initial accepted (unused) to keep a uniform train() signature with PINNSolver --
+        # psi0 is already fixed analytically at construction time (see __init__/_psi0_torch).
         print(f"\nTraining hard-IC PINN for {epochs} epochs...")
         print(f"Device: {device}")
-
-        self.psi0_real = np.real(psi_initial)
-        self.psi0_imag = np.imag(psi_initial)
 
         for epoch in range(epochs):
             self.optimizer.zero_grad()

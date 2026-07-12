@@ -1,5 +1,5 @@
 """
-Build the 6-slide LinkedIn carousel (post/carousel.pdf) from committed figures
+Build the 7-slide LinkedIn carousel (post/carousel.pdf) from committed figures
 and results_raw/*.json (the source of truth produced by the experiments).
 
 Each slide is a matplotlib figure sized for LinkedIn portrait (1080x1350 px
@@ -79,7 +79,7 @@ def slide1_hook(pdf):
     frame = best_gif_frame(os.path.join(FIGURES, "traditional_solver.gif"))
     ax_img.imshow(frame)
 
-    fig.text(0.5, 0.14, "It failed. That was the interesting part.",
+    fig.text(0.5, 0.14, "It failed. Then I almost published\nthe wrong reason why.",
               ha="center", va="top", fontsize=17, color=ACCENT, style="italic")
     fig.text(0.5, 0.04, "swipe -->", ha="center", fontsize=11, color="#8b949e")
     pdf.savefig(fig, facecolor=BG)
@@ -95,31 +95,69 @@ def failure_comparison_crop():
     return frame.crop((150, 110, 2380, 1150))
 
 
-def slide2_failure(pdf, exp02_adopted, exp02_original):
+def slide2_failure(pdf, exp02):
     fig = new_slide()
     fig.text(0.5, 0.95, "The failure", ha="center", fontsize=24, fontweight="bold", color=FG)
 
-    ax_img = fig.add_axes([0.08, 0.42, 0.84, 0.46])
+    ax_img = fig.add_axes([0.08, 0.44, 0.84, 0.44])
     ax_img.axis("off")
     img = failure_comparison_crop()
     ax_img.imshow(img)
     ax_img.text(0.5, -0.06, "Truth (left) has fine interference fringes the PINN (right) can't represent.",
                 transform=ax_img.transAxes, ha="center", va="top", fontsize=9, color="#8b949e")
 
-    err = exp02_adopted["mean_relative_error_pct"]
-    slowdown = exp02_adopted["slowdown_factor"]
+    err = exp02["adopted"]["mean_relative_error_pct"]
+    slowdown = exp02["adopted"]["slowdown_factor"]
 
-    fig.text(0.5, 0.32, f"{err:.0f}%", ha="center", fontsize=48, fontweight="bold", color=ACCENT3)
-    fig.text(0.5, 0.24, "mean relative error vs the classical solver", ha="center", fontsize=13, color=FG)
-    fig.text(0.5, 0.16, f"~{slowdown:.0f}x slower to train, for a wrong answer",
+    fig.text(0.5, 0.32, f"{err:.0f}%", ha="center", fontsize=44, fontweight="bold", color=ACCENT3)
+    fig.text(0.5, 0.25, "mean relative error vs the classical solver", ha="center", fontsize=13, color=FG)
+    fig.text(0.5, 0.18, f"~{slowdown:.0f}x slower to train, for a wrong answer",
               ha="center", fontsize=13, color=FG)
-    fig.text(0.5, 0.07, "Fails under the best initial-condition formulation tested,\nnot just a weak strawman.",
+    e_adopt = exp02["adopted"]["mean_relative_error_pct"]
+    e_orig = exp02["original_weight"]["mean_relative_error_pct"]
+    e_hard = exp02["hard_ic"]["mean_relative_error_pct"]
+    fig.text(0.5, 0.09,
+              f"Tested three formulations, incl. the one that wins the\n"
+              f"simpler 1D case. All fail: {e_adopt:.0f}% / {e_orig:.0f}% / {e_hard:.0f}% error.",
               ha="center", fontsize=11, color="#8b949e", style="italic")
     pdf.savefig(fig, facecolor=BG)
     plt.close(fig)
 
 
-def slide3_diagnosis(pdf, exp06):
+def slide3_nearmiss(pdf):
+    fig = new_slide()
+    fig.text(0.5, 0.95, "The near-miss", ha="center", fontsize=24, fontweight="bold", color=FG)
+
+    fig.text(0.08, 0.83, "First result", fontsize=15, fontweight="bold", color=ACCENT)
+    fig.text(0.08, 0.785,
+              "Soft IC: 2.2% error. Hard IC: 77.2%.\n"
+              "Investigated the gap -- looked like a real\n"
+              "optimization pathology tied to causality.",
+              fontsize=11.5, color=FG, va="top")
+
+    fig.text(0.08, 0.60, "Found", fontsize=15, fontweight="bold", color=ACCENT3)
+    fig.text(0.08, 0.555,
+              "A detached tensor zeroed the psi0''(x)\n"
+              "term in the hard-IC physics residual.\n"
+              "Loss -> ~0 on a wavefunction frozen at\n"
+              "t=0. Not physics -- one `.detach()`.",
+              fontsize=11.5, color=FG, va="top")
+
+    fig.text(0.08, 0.35, "Fixed & retested", fontsize=15, fontweight="bold", color=ACCENT2)
+    fig.text(0.08, 0.305,
+              "Hard IC: 1.1%. Soft IC: 2.0%.\n"
+              "Hard actually wins -- matching the\n"
+              "original hypothesis all along.",
+              fontsize=11.5, color=FG, va="top")
+
+    fig.text(0.5, 0.10,
+              "A too-good loss on an obviously wrong answer\nis a bug smell, not a pathology.",
+              ha="center", fontsize=13, color=ACCENT, style="italic", fontweight="bold")
+    pdf.savefig(fig, facecolor=BG)
+    plt.close(fig)
+
+
+def slide4_diagnosis(pdf, exp06):
     fig = new_slide()
     fig.text(0.5, 0.95, "The diagnosis", ha="center", fontsize=24, fontweight="bold", color=FG)
     ax = fig.add_axes([0.14, 0.30, 0.75, 0.56])
@@ -132,7 +170,7 @@ def slide3_diagnosis(pdf, exp06):
     ax.set_ylabel("Mean relative error (%)", fontsize=12)
     ax.grid(True, alpha=0.2, color="#30363d")
 
-    fig.text(0.5, 0.16, "Error grows systematically with momentum.", ha="center",
+    fig.text(0.5, 0.16, "Error explodes with momentum.", ha="center",
               fontsize=15, color=FG, fontweight="bold")
     fig.text(0.5, 0.09, "Networks can't represent fast phase oscillations --\n"
                         "this is a known failure mode (spectral bias), not bad luck.",
@@ -141,37 +179,62 @@ def slide3_diagnosis(pdf, exp06):
     plt.close(fig)
 
 
-def slide4_fixes(pdf, exp07, exp09, exp06):
+def norm_verdict(d):
+    s = d["summary"]
+    lines = ["Real fix at high momentum (N(t)\nconfirms amplitude decay is real):"]
+    for px, row in s.items():
+        b, c = row["baseline_mean"], row["constrained_mean"]
+        tag = "better" if c < b else "worse"
+        lines.append(f"px={px}: {b:.1f}%->{c:.1f}% ({tag})")
+    return "\n".join(lines)
+
+
+def causal_verdict(d):
+    lines = []
+    for px, row in d["summary"].items():
+        vals = d["results"][px]["causal"]
+        baseline = row["baseline_mean"]
+        stable = [v for v in vals if v < 2 * baseline]
+        diverged = len(vals) - len(stable)
+        stable_mean = sum(stable) / len(stable)
+        if diverged:
+            lines.append(f"px={px}: {len(stable)}/{len(vals)} seeds "
+                         f"{baseline:.1f}%->{stable_mean:.1f}%\n  ({diverged} diverged badly)")
+        elif abs(stable_mean - baseline) < 0.1:
+            lines.append(f"px={px}: {baseline:.1f}%->{stable_mean:.1f}% (no effect)")
+        else:
+            tag = "better" if stable_mean < baseline else "worse"
+            lines.append(f"px={px}: {baseline:.1f}%->{stable_mean:.1f}% ({tag})")
+    return "\n".join(lines)
+
+
+def slide5_fixes(pdf, exp07_raw, exp09_raw):
     fig = new_slide()
     fig.text(0.5, 0.95, "The fixes, tested", ha="center", fontsize=24, fontweight="bold", color=FG)
 
     rows = [
-        ("Amplitude decay", "unitarity constraint", exp07),
-        ("Causality violation", "causal training", exp09),
-        ("Spectral bias", "diagnosed, not fixed", None),
+        ("Amplitude decay", "unitarity constraint", norm_verdict(exp07_raw)),
+        ("Causality / instability", "causal training", causal_verdict(exp09_raw)),
+        ("Spectral bias", "diagnosed, not fixed",
+         "Confirmed dominant cause\n(momentum sweep). Needs a\n"
+         "different architecture --\nfuture work, not attempted."),
     ]
 
     y0 = 0.80
-    for i, (mech, fix, data) in enumerate(rows):
-        y = y0 - i * 0.22
+    for i, (mech, fix, verdict) in enumerate(rows):
+        y = y0 - i * 0.24
         fig.text(0.08, y, mech, fontsize=15, fontweight="bold", color=ACCENT)
         fig.text(0.08, y - 0.045, fix, fontsize=11, color="#8b949e", style="italic")
-        if data is not None:
-            verdict = data.get("verdict", "")
-            fig.text(0.55, y - 0.01, verdict, fontsize=10.5, color=FG, va="top")
-        else:
-            fig.text(0.55, y - 0.01, "Confirmed dominant cause\n(momentum sweep). Needs a\n"
-                                       "different architecture --\nfuture work, not attempted.",
-                     fontsize=10.5, color=FG, va="top")
+        fig.text(0.55, y - 0.01, verdict, fontsize=10, color=FG, va="top")
 
-    fig.text(0.5, 0.05, "Neither physics-constraint fix rescued accuracy once the\n"
-                        "IC-formulation confound was corrected. Spectral bias is the story.",
+    fig.text(0.5, 0.04, "One fix genuinely helps, one is promising but unstable --\n"
+                        "neither closes the gap. Spectral bias is still the story.",
               ha="center", fontsize=11, color="#8b949e", style="italic")
     pdf.savefig(fig, facecolor=BG)
     plt.close(fig)
 
 
-def slide5_win(pdf, exp05):
+def slide6_win(pdf, exp05):
     fig = new_slide()
     fig.text(0.5, 0.95, "Where PINNs win", ha="center", fontsize=24, fontweight="bold", color=FG)
     ax_img = fig.add_axes([0.10, 0.42, 0.80, 0.46])
@@ -191,7 +254,7 @@ def slide5_win(pdf, exp05):
     plt.close(fig)
 
 
-def slide6_decision(pdf):
+def slide7_decision(pdf):
     fig = new_slide()
     fig.text(0.5, 0.95, "Should you use a PINN?", ha="center", fontsize=22, fontweight="bold", color=FG)
 
@@ -222,24 +285,6 @@ def main():
     exp05_errs = [v["V_rel_err_pct"] for v in exp05_raw.values()]
     exp05 = {"mean_pct": sum(exp05_errs) / len(exp05_errs)}
 
-    def norm_verdict(d):
-        s = d["summary"]
-        lines = ["Fixes amplitude decay (N(t)\nconfirms it), but costs detail:"]
-        for px, row in s.items():
-            delta = f"{row['baseline_mean']:.1f}%->{row['constrained_mean']:.1f}%"
-            lines.append(f"px={px}: {delta} (worse)")
-        return "\n".join(lines)
-
-    def causal_verdict(d):
-        s = d["summary"]
-        lines = []
-        for px, row in s.items():
-            lines.append(f"px={px}: {'rescued' if row['improved'] else 'no effect'}")
-        return "\n".join(lines)
-
-    exp07 = {"verdict": norm_verdict(exp07_raw)}
-    exp09 = {"verdict": causal_verdict(exp09_raw)}
-
     # exp02 headline numbers, written from the Task 2.2 runs into
     # results_raw/exp02_summary.json (see RESULTS.md Task 2.2).
     exp02 = load_json("exp02_summary.json")
@@ -247,11 +292,12 @@ def main():
     out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "carousel.pdf")
     with PdfPages(out_path) as pdf:
         slide1_hook(pdf)
-        slide2_failure(pdf, exp02["adopted"], exp02["original_weight"])
-        slide3_diagnosis(pdf, exp06)
-        slide4_fixes(pdf, exp07, exp09, exp06)
-        slide5_win(pdf, exp05)
-        slide6_decision(pdf)
+        slide2_failure(pdf, exp02)
+        slide3_nearmiss(pdf)
+        slide4_diagnosis(pdf, exp06)
+        slide5_fixes(pdf, exp07_raw, exp09_raw)
+        slide6_win(pdf, exp05)
+        slide7_decision(pdf)
 
     print(f"Carousel saved to {out_path}")
 

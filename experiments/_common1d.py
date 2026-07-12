@@ -20,6 +20,7 @@ import os
 import time
 
 import numpy as np
+from scipy.fft import dst, idst
 import torch
 import torch.nn as nn
 from torch.optim import Adam
@@ -84,37 +85,44 @@ def make_psi0(x0=0.0, sigma=1.0, px=1.0, norm_grid=1000):
 
 
 def split_operator_1d(psi0_func, N=512, n_steps=2000, frame_times=None):
-    """1D split-operator ground truth for an arbitrary psi0_func."""
-    dx = L / N
-    x = np.linspace(x_lo, x_hi, N)
-    dt = T / n_steps
+    """1D ground truth for an arbitrary psi0_func: free particle in an
+    infinite square well on [x_lo, x_hi], matching Net1D's architectural
+    hard-wall BC (psi forced to exactly 0 at x_lo/x_hi, V=0 inside, no
+    potential term in the PINN residual at all).
 
-    kx = 2 * np.pi * np.fft.fftfreq(N, dx)
-    K = hbar ** 2 * kx ** 2 / (2 * m)
-
-    V = np.zeros(N)
-    wall = 50
-    V[x < x_lo + 0.3] = wall
-    V[x > x_hi - 0.3] = wall
+    Solved exactly via a Dirichlet sine series (DST-I): psi=0 at the walls
+    is then exact by construction, eigenmodes evolve analytically
+    (psi_n(t) = psi_n(0) exp(-i E_n t/hbar)), so there is no time-stepping
+    error and no wall-height/stiffness hyperparameter to tune. (An earlier
+    version used a finite V=50 soft wall 0.3 inside the domain edges as a
+    split-operator FFT trick -- that let up to ~13% of the wavefunction's
+    probability mass reach into the wall region for fast packets (px=4),
+    diverging from this exact solution by >80% at t=1; low-momentum cases
+    were only mildly affected, <2.3%. n_steps is accepted for call-site
+    compatibility but unused.)
+    """
+    x = np.linspace(x_lo, x_hi, N + 2)[1:-1]  # interior points; psi=0 at the endpoints exactly
+    dx = x[1] - x[0]
+    Lbox = x_hi - x_lo
+    n = np.arange(1, N + 1)
+    E_n = hbar ** 2 * (n * np.pi / Lbox) ** 2 / (2 * m)
 
     psi_r, psi_i = psi0_func(x)
     psi = psi_r + 1j * psi_i
     norm = np.sqrt(np.sum(np.abs(psi) ** 2) * dx)
     psi /= norm
 
+    c_r = dst(psi.real, type=1)
+    c_i = dst(psi.imag, type=1)
+
+    if frame_times is None:
+        frame_times = []
     frames = {}
-    for step in range(n_steps + 1):
-        t_now = step * dt
-        if frame_times is not None:
-            for ft in frame_times:
-                if abs(t_now - ft) < dt / 2 and ft not in frames:
-                    frames[ft] = (x, np.abs(psi) ** 2, psi.copy())
-        if step < n_steps:
-            psi = psi * np.exp(-1j * V * dt / (2 * hbar))
-            psi_k = np.fft.fft(psi)
-            psi_k = psi_k * np.exp(-1j * K * dt / hbar)
-            psi = np.fft.ifft(psi_k)
-            psi = psi * np.exp(-1j * V * dt / (2 * hbar))
+    for ft in frame_times:
+        phase = np.exp(-1j * E_n * ft / hbar)
+        c = (c_r + 1j * c_i) * phase
+        psi_t = idst(c.real, type=1) + 1j * idst(c.imag, type=1)
+        frames[ft] = (x, np.abs(psi_t) ** 2, psi_t)
 
     return frames
 
@@ -163,6 +171,9 @@ class PINNSolver1DTD:
         self.ic = ic
         self.w_ic = w_ic
         self.psi0_func = make_psi0(x0, sigma, px)
+        x_dense = np.linspace(x_lo, x_hi, 1000)
+        g_dense = np.exp(-((x_dense - x0) ** 2) / (2 * sigma ** 2))
+        self._psi0_norm = float(np.sqrt(np.trapz(g_dense ** 2, x_dense)))
         self.model = Net1D(hidden_size, n_layers).to(device)
         self.optimizer = Adam(self.model.parameters(), lr=1e-3)
         self.loss_history = []
@@ -174,10 +185,21 @@ class PINNSolver1DTD:
         i_t = torch.tensor(i.reshape(-1, 1), dtype=torch.float32, device=device)
         return r_t, i_t
 
+    def _psi0_torch(self, x):
+        """Differentiable psi0(x), matching make_psi0's normalisation. Used
+        in full_psi (hard IC) so the PDE residual sees d(psi0)/dx via
+        autograd -- psi0_at() detaches x to numpy and is only safe as a
+        constant MSE target (ic_loss), never inside a term autograd needs
+        to differentiate w.r.t. x."""
+        gauss = torch.exp(-((x - self.x0) ** 2) / (2 * self.sigma ** 2))
+        r = gauss * torch.cos(self.px * x / hbar) / self._psi0_norm
+        i = gauss * torch.sin(self.px * x / hbar) / self._psi0_norm
+        return r, i
+
     def full_psi(self, x, t):
         out_r, out_i = self.model(x, t)
         if self.ic == "hard":
-            psi0_r, psi0_i = self.psi0_at(x)
+            psi0_r, psi0_i = self._psi0_torch(x)
             return psi0_r + t * out_r, psi0_i + t * out_i
         return out_r, out_i
 
