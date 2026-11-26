@@ -1,5 +1,5 @@
 [project]
-name = "qbox"
+name = "pinn-particle-in-a-box"
 version = "0.1.0"
 description = "PINN vs classical split-operator solver for the 2D Schrodinger equation"
 requires-python = ">=3.9"
