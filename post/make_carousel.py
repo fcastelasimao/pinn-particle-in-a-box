@@ -1,12 +1,12 @@
 """
 Build the 7-slide LinkedIn carousel (post/carousel.pdf) from committed figures
-and results_raw/*.json (the source of truth produced by the experiments).
+and results/*.json (the source of truth produced by the experiments).
 
 Each slide is a matplotlib figure sized for LinkedIn portrait (1080x1350 px
 at 150 dpi = 7.2x9.0 in), saved into one PDF via PdfPages so LinkedIn renders
 it as a swipeable carousel.
 
-Run after all Phase 2 experiments have produced their results_raw/*.json:
+Run after all Phase 2 experiments have produced their results/*.json:
     uv run python post/make_carousel.py
 """
 
@@ -21,7 +21,7 @@ from PIL import Image, ImageSequence
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIGURES = os.path.join(ROOT, "figures")
-RESULTS_RAW = os.path.join(ROOT, "results_raw")
+RESULTS_RAW = os.path.join(ROOT, "results")
 
 SLIDE_SIZE = (7.2, 9.0)  # inches -> 1080x1350 px @ 150 dpi
 DPI = 150
@@ -286,7 +286,7 @@ def main():
     exp05 = {"mean_pct": sum(exp05_errs) / len(exp05_errs)}
 
     # exp02 headline numbers, written from the Task 2.2 runs into
-    # results_raw/exp02_summary.json (see RESULTS.md Task 2.2).
+    # results/exp02_summary.json (see results.ipynb, Task 2.2).
     exp02 = load_json("exp02_summary.json")
 
     out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "carousel.pdf")

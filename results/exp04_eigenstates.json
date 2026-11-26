@@ -1,0 +1,212 @@
+{
+  "0": {
+    "rows": [
+      {
+        "problem": "Infinite Square Well",
+        "n": 1,
+        "E_exact": 4.934802200544679,
+        "E_fd": 4.934798133632377,
+        "E_pinn": 4.90553617477417,
+        "E_pinn_err_pct": 0.593053674315028,
+        "psi_l2_err_pct": 0.1517936905450458
+      },
+      {
+        "problem": "Infinite Square Well",
+        "n": 2,
+        "E_exact": 19.739208802178716,
+        "E_fd": 19.73914373279512,
+        "E_pinn": 19.737306594848633,
+        "E_pinn_err_pct": 0.009636694910857906,
+        "psi_l2_err_pct": 0.7888031091646872
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 0,
+        "E_exact": 0.5,
+        "E_fd": 0.4999954909460302,
+        "E_pinn": 0.5026074647903442,
+        "E_pinn_err_pct": 0.5214929580688477,
+        "psi_l2_err_pct": 0.49225348823907256
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 1,
+        "E_exact": 1.5,
+        "E_fd": 1.4999774545669724,
+        "E_pinn": 1.491652011871338,
+        "E_pinn_err_pct": 0.5565325419108074,
+        "psi_l2_err_pct": 1.838845413863812
+      }
+    ],
+    "max_E_err_pct": 0.593053674315028,
+    "max_l2_err_pct": 1.838845413863812
+  },
+  "1": {
+    "rows": [
+      {
+        "problem": "Infinite Square Well",
+        "n": 1,
+        "E_exact": 4.934802200544679,
+        "E_fd": 4.934798133632377,
+        "E_pinn": 4.91666841506958,
+        "E_pinn_err_pct": 0.36746732165065094,
+        "psi_l2_err_pct": 0.2021478447887155
+      },
+      {
+        "problem": "Infinite Square Well",
+        "n": 2,
+        "E_exact": 19.739208802178716,
+        "E_fd": 19.73914373279512,
+        "E_pinn": 19.95538902282715,
+        "E_pinn_err_pct": 1.0951817918080464,
+        "psi_l2_err_pct": 0.6537513344270054
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 0,
+        "E_exact": 0.5,
+        "E_fd": 0.4999954909460302,
+        "E_pinn": 0.49803704023361206,
+        "E_pinn_err_pct": 0.3925919532775879,
+        "psi_l2_err_pct": 0.4155054651357381
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 1,
+        "E_exact": 1.5,
+        "E_fd": 1.4999774545669724,
+        "E_pinn": 1.4803518056869507,
+        "E_pinn_err_pct": 1.3098796208699546,
+        "psi_l2_err_pct": 1.775672553146522
+      }
+    ],
+    "max_E_err_pct": 1.3098796208699546,
+    "max_l2_err_pct": 1.775672553146522
+  },
+  "2": {
+    "rows": [
+      {
+        "problem": "Infinite Square Well",
+        "n": 1,
+        "E_exact": 4.934802200544679,
+        "E_fd": 4.934798133632377,
+        "E_pinn": 4.920084476470947,
+        "E_pinn_err_pct": 0.2982434447343657,
+        "psi_l2_err_pct": 0.2641447504245191
+      },
+      {
+        "problem": "Infinite Square Well",
+        "n": 2,
+        "E_exact": 19.739208802178716,
+        "E_fd": 19.73914373279512,
+        "E_pinn": 19.984451293945312,
+        "E_pinn_err_pct": 1.242412977259392,
+        "psi_l2_err_pct": 0.7689236713639955
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 0,
+        "E_exact": 0.5,
+        "E_fd": 0.4999954909460302,
+        "E_pinn": 0.5023811459541321,
+        "E_pinn_err_pct": 0.476229190826416,
+        "psi_l2_err_pct": 0.42386628072907323
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 1,
+        "E_exact": 1.5,
+        "E_fd": 1.4999774545669724,
+        "E_pinn": 1.5154104232788086,
+        "E_pinn_err_pct": 1.0273615519205728,
+        "psi_l2_err_pct": 2.093961221536158
+      }
+    ],
+    "max_E_err_pct": 1.242412977259392,
+    "max_l2_err_pct": 2.093961221536158
+  },
+  "3": {
+    "rows": [
+      {
+        "problem": "Infinite Square Well",
+        "n": 1,
+        "E_exact": 4.934802200544679,
+        "E_fd": 4.934798133632377,
+        "E_pinn": 4.92688512802124,
+        "E_pinn_err_pct": 0.16043343181140907,
+        "psi_l2_err_pct": 0.15574265848878427
+      },
+      {
+        "problem": "Infinite Square Well",
+        "n": 2,
+        "E_exact": 19.739208802178716,
+        "E_fd": 19.73914373279512,
+        "E_pinn": 19.657546997070312,
+        "E_pinn_err_pct": 0.4137035375976673,
+        "psi_l2_err_pct": 0.6387455255011937
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 0,
+        "E_exact": 0.5,
+        "E_fd": 0.4999954909460302,
+        "E_pinn": 0.49244293570518494,
+        "E_pinn_err_pct": 1.5114128589630127,
+        "psi_l2_err_pct": 0.394561965327201
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 1,
+        "E_exact": 1.5,
+        "E_fd": 1.4999774545669724,
+        "E_pinn": 1.5197601318359375,
+        "E_pinn_err_pct": 1.3173421223958335,
+        "psi_l2_err_pct": 2.0743863128310713
+      }
+    ],
+    "max_E_err_pct": 1.5114128589630127,
+    "max_l2_err_pct": 2.0743863128310713
+  },
+  "4": {
+    "rows": [
+      {
+        "problem": "Infinite Square Well",
+        "n": 1,
+        "E_exact": 4.934802200544679,
+        "E_fd": 4.934798133632377,
+        "E_pinn": 4.88008975982666,
+        "E_pinn_err_pct": 1.1087058507021812,
+        "psi_l2_err_pct": 0.2599923163532766
+      },
+      {
+        "problem": "Infinite Square Well",
+        "n": 2,
+        "E_exact": 19.739208802178716,
+        "E_fd": 19.73914373279512,
+        "E_pinn": 19.622112274169922,
+        "E_pinn_err_pct": 0.5932179409129589,
+        "psi_l2_err_pct": 1.018955120968673
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 0,
+        "E_exact": 0.5,
+        "E_fd": 0.4999954909460302,
+        "E_pinn": 0.4987933933734894,
+        "E_pinn_err_pct": 0.24132132530212402,
+        "psi_l2_err_pct": 0.44175785793879474
+      },
+      {
+        "problem": "Harmonic Oscillator",
+        "n": 1,
+        "E_exact": 1.5,
+        "E_fd": 1.4999774545669724,
+        "E_pinn": 1.4791227579116821,
+        "E_pinn_err_pct": 1.3918161392211914,
+        "psi_l2_err_pct": 2.1722558472276368
+      }
+    ],
+    "max_E_err_pct": 1.3918161392211914,
+    "max_l2_err_pct": 2.1722558472276368
+  }
+}

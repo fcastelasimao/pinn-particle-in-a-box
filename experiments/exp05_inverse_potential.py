@@ -47,8 +47,8 @@ the exact psi and E we sample from, and the V_true we score the
 reconstruction against.
 
 Multi-seed: pass --seed N (default 0). Only seed 0 saves the committed PNG;
-all seeds append their numbers to results_raw/exp05_inverse_potential.json
-for the mean +- std reported in RESULTS.md (Task 2.6).
+all seeds append their numbers to results/exp05_inverse_potential.json
+for the mean +- std reported in results.ipynb (Task 2.6).
 """
 
 import argparse
@@ -71,7 +71,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from qbox.utils import get_device, seed_everything
 
 FIGURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "figures")
-RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results_raw")
+RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results")
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 device = get_device()

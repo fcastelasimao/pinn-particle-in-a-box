@@ -1,5 +1,5 @@
 """
-Run experiments 03-09 (skips the slow 2D ones: exp01, exp02).
+Run experiments 03-10 (skips the slow 2D ones: exp01, exp02).
 
 exp08 must run before exp06/exp07/exp09 (it decides the IC formulation they
 adopt) -- this script enforces that order.
@@ -13,7 +13,7 @@ To reproduce the classical baseline gif:
 
 Multi-seed headline experiments (exp04, exp05) are run here for seed 0 only
 (matches the committed figures); re-run with --seed 1..4 for the error bars
-in RESULTS.md.
+in results.ipynb.
 """
 
 import subprocess
@@ -30,6 +30,8 @@ ORDER = [
     "exp06_momentum_sweep.py",
     "exp07_norm_constraint.py",
     "exp09_causal_training.py",
+    "exp10_fourier_features.py",
+    "exp10b_fourier_tuned.py",   # needs exp10's JSON
 ]
 
 

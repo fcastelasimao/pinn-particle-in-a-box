@@ -1,6 +1,6 @@
 <!--
 Draft for the owner to edit into their own voice. Two hook variants, one body.
-Every number below traces to RESULTS.md. Verify against RESULTS.md if the
+Every number below traces to results.ipynb. Verify against results.ipynb if the
 experiments are ever re-run before posting.
 -->
 

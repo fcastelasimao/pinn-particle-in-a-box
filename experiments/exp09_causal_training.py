@@ -42,7 +42,7 @@ from _common1d import (PINNSolver1DTD, make_psi0, split_operator_1d,
                         mean_relative_error, get_adopted_ic, x_lo, x_hi)
 
 FIGURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "figures")
-RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results_raw")
+RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results")
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 SIGMA = 1.0

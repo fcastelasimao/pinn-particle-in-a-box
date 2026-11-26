@@ -1,5 +1,9 @@
 # Implementation Plan: From Current State to Finalized LinkedIn Post
 
+> **Status: complete (historical record).** Written before the repo was reorganized; file
+> names below are as they were then. `RESULTS.md` has since been replaced by
+> `results.ipynb` (data in `results/`).
+
 > **Audience of this document:** an AI coding assistant (or human) implementing this plan
 > in a fresh session, with no prior context. Read this whole file before touching anything.
 >

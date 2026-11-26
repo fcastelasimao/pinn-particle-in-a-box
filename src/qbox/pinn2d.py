@@ -100,7 +100,7 @@ class PINNSolver:
     SOFT initial condition: loss = loss_pde + w_ic * loss_initial.
 
     w_ic defaults to 1000.0 (the original, untested weight). Task 2.2 in
-    IMPLEMENTATION_PLAN.md re-runs this with w_ic=1.0, the weight
+    plans/implementation_plan.md re-runs this with w_ic=1.0, the weight
     exp08_ic_formulation.py found actually wins in the 1D study.
     """
 
@@ -440,7 +440,7 @@ class PINNSolverHardIC:
     looked psi0 up by nearest grid point from a numpy array, which is
     piecewise-constant and has zero spatial derivative almost everywhere --
     the same class of bug fixed in _common1d.py's 1D hard-IC solver (see
-    RESULTS.md Task 2.1).
+    results.ipynb, Task 2.1).
     """
 
     def __init__(self, X, Y, V, hbar=1.0, m=1.0, x0=0.0, y0=0.0, sigma=0.5, px=2.0, py=0.0):

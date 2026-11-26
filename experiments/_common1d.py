@@ -30,7 +30,7 @@ from qbox.utils import get_device, seed_everything
 
 device = get_device()
 
-RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results_raw")
+RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results")
 
 
 def get_adopted_ic(default="hard", default_w_ic=1000.0):
@@ -39,7 +39,7 @@ def get_adopted_ic(default="hard", default_w_ic=1000.0):
     ic == 'hard' but always returned for a uniform call signature.
 
     Falls back to defaults with a loud warning if exp08 hasn't been run yet
-    -- exp06/exp07/exp09 should all be run AFTER exp08 (see IMPLEMENTATION_PLAN.md
+    -- exp06/exp07/exp09 should all be run AFTER exp08 (see plans/implementation_plan.md
     Phase 2 ordering note), but this keeps them runnable standalone too.
     """
     path = os.path.join(RESULTS_DIR, "exp08_ic_formulation.json")
@@ -129,11 +129,21 @@ def split_operator_1d(psi0_func, N=512, n_steps=2000, frame_times=None):
 
 class Net1D(nn.Module):
     """(x,t) -> (out_real, out_imag). Hard spatial-wall BC baked in via a
-    multiplicative envelope that is exactly 0 at x_lo and x_hi."""
+    multiplicative envelope that is exactly 0 at x_lo and x_hi.
 
-    def __init__(self, hidden_size=64, n_layers=5):
+    fourier_features=True prepends sin/cos(scale*x) bands to the raw (x,t)
+    input (Tancik et al. 2020 / Wang et al. 2021's fix for spectral bias) --
+    the standard mitigation for the exp06 finding that error grows with
+    momentum because the plain MLP can't represent fast phase oscillations.
+    """
+
+    def __init__(self, hidden_size=64, n_layers=5, fourier_features=False,
+                 fourier_scales=(1.0, 2.0, 4.0, 8.0, 16.0)):
         super().__init__()
-        layers = [nn.Linear(2, hidden_size), nn.Tanh()]
+        self.fourier_features = fourier_features
+        self.fourier_scales = fourier_scales
+        input_dim = 2 + 2 * len(fourier_scales) if fourier_features else 2
+        layers = [nn.Linear(input_dim, hidden_size), nn.Tanh()]
         for _ in range(n_layers - 1):
             layers += [nn.Linear(hidden_size, hidden_size), nn.Tanh()]
         layers += [nn.Linear(hidden_size, 2)]
@@ -145,7 +155,14 @@ class Net1D(nn.Module):
         self.bc_scale = (L / 2) ** 2
 
     def forward(self, x, t):
-        inp = torch.cat([x, t], dim=1)
+        if self.fourier_features:
+            bands = [x, t]
+            for s in self.fourier_scales:
+                bands.append(torch.sin(s * x))
+                bands.append(torch.cos(s * x))
+            inp = torch.cat(bands, dim=1)
+        else:
+            inp = torch.cat([x, t], dim=1)
         out = self.net(inp)
         bc = (x - x_lo) * (x_hi - x) / self.bc_scale
         return bc * out[:, 0:1], bc * out[:, 1:2]
@@ -165,7 +182,8 @@ class PINNSolver1DTD:
     """
 
     def __init__(self, px=1.0, sigma=1.0, x0=0.0, seed=0, ic="hard",
-                 w_ic=1000.0, hidden_size=64, n_layers=5):
+                 w_ic=1000.0, hidden_size=64, n_layers=5,
+                 fourier_features=False, fourier_scales=(1.0, 2.0, 4.0, 8.0, 16.0)):
         seed_everything(seed)
         self.px, self.sigma, self.x0 = px, sigma, x0
         self.ic = ic
@@ -174,7 +192,7 @@ class PINNSolver1DTD:
         x_dense = np.linspace(x_lo, x_hi, 1000)
         g_dense = np.exp(-((x_dense - x0) ** 2) / (2 * sigma ** 2))
         self._psi0_norm = float(np.sqrt(np.trapz(g_dense ** 2, x_dense)))
-        self.model = Net1D(hidden_size, n_layers).to(device)
+        self.model = Net1D(hidden_size, n_layers, fourier_features, fourier_scales).to(device)
         self.optimizer = Adam(self.model.parameters(), lr=1e-3)
         self.loss_history = []
 

@@ -43,8 +43,8 @@ instantaneous. The point is the accuracy regime, not a speed win. (For the
 genuine "PINN beats traditional" claim, see exp05_inverse_potential.py.)
 
 Multi-seed: pass --seed N (default 0). Only seed 0 saves the committed PNG;
-all seeds append their numbers to results_raw/exp04_eigenstates.json for the
-mean +- std reported in RESULTS.md (Task 2.6).
+all seeds append their numbers to results/exp04_eigenstates.json for the
+mean +- std reported in results.ipynb (Task 2.6).
 """
 
 import argparse
@@ -67,7 +67,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from qbox.utils import get_device, seed_everything
 
 FIGURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "figures")
-RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results_raw")
+RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results")
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 device = get_device()
@@ -316,7 +316,7 @@ def main(seed=0, save_plot=True):
     print(f"Worst PINN psi L2 error:  {max_pinn_l2:.3f}%")
     print("=" * 64)
 
-    # --- Persist per-seed results for RESULTS.md aggregation (Task 2.6) ---
+    # --- Persist per-seed results for results.ipynb aggregation (Task 2.6) ---
     result_path = os.path.join(RESULTS_DIR, "exp04_eigenstates.json")
     data = {}
     if os.path.exists(result_path):

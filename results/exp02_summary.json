@@ -1,0 +1,23 @@
+{
+  "adopted": {
+    "formulation": "soft IC, w_ic=1",
+    "mean_relative_error_pct": 99.96,
+    "final_relative_error_pct": 99.82,
+    "pinn_time_s": 267.2,
+    "slowdown_factor": 548.0
+  },
+  "original_weight": {
+    "formulation": "soft IC, w_ic=1000",
+    "mean_relative_error_pct": 99.78,
+    "final_relative_error_pct": 99.37,
+    "pinn_time_s": 292.6,
+    "slowdown_factor": 155.4
+  },
+  "hard_ic": {
+    "formulation": "hard IC (1D-adopted, bug fixed)",
+    "mean_relative_error_pct": 272.89,
+    "final_relative_error_pct": 470.82,
+    "pinn_time_s": 331.5,
+    "slowdown_factor": 248.3
+  }
+}

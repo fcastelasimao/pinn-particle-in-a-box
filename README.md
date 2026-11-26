@@ -147,11 +147,24 @@ warm-up schedule) that's out of scope here.
 
 ![Causal training](figures/exp09_causal_training.png)
 
+**Follow-up: Fourier features** (`exp10_fourier_features.py`, `exp10b_fourier_tuned.py`)
+— the textbook fix for spectral bias is to feed the network sin/cos(s·x) bands before the
+MLP. At px=4, 5 seeds: a wide, untuned band (s ∈ {1, 2, 4, 8, 16}) made things **worse**
+(37.7% → 65.5% ± 4.2%). A band centred on the packet's actual wavenumber (s ∈ {2, 4, 6},
+since k ≈ px = 4) made things **better** (37.7% → **24.2% ± 1.4%**), the largest single
+improvement of any fix tried here. Caveat: the tuned band was chosen after seeing the
+wide band fail, on the same test case and seeds, so 24.2% is an optimistic estimate.
+The band has to be matched to the signal, which a forward solver for unknown dynamics
+won't always know in advance.
+
+![Fourier features](figures/exp10_fourier_features.png)
+
 **Net picture:** spectral bias is the dominant, confirmed mechanism, and it alone
 explains the near-total 2D failure at px=-15. Amplitude decay is real at high momentum
 and a correctly-tuned penalty term measurably fixes it. Causal training has genuine
-promise but an unresolved stability problem. None of the three "fixes" comes close to
-closing the gap implied by the momentum sweep — spectral bias remains the story.
+promise but an unresolved stability problem. Band-matched Fourier features help most
+(37.7% → 24.2%). None of the fixes comes close to the ~1% error seen at px≤2, so spectral
+bias remains the story.
 
 ## The control: eigenstates work
 
@@ -161,7 +174,7 @@ frequency — removed. Trained via Rayleigh-quotient minimization, compared agai
 finite-difference diagonalization, 5 seeds:
 
 - Worst-case PINN energy error: **1.21% ± 0.32%** (worst single seed: 1.51%)
-- Worst-case PINN ψ L2 error: **1.99% ± 0.16%**
+- Worst-case PINN ψ L2 error: **1.99% ± 0.15%**
 
 The same network architecture that fails at high-momentum dynamics matches the exact
 analytic/finite-difference solution here. This pins the boundary: the failure is about
@@ -213,10 +226,10 @@ wavefunction samples plus the known ground-state energy, 5 seeds:
 
 ## Threats to validity
 
-- **Single architecture.** All PINNs here are vanilla MLPs with `tanh` activations.
-  Architectures designed for high-frequency functions (Fourier feature embeddings,
-  SIREN) are known partial fixes for spectral bias and were deliberately not attempted
-  — see "Out of scope" in `IMPLEMENTATION_PLAN.md`.
+- **Mostly a single architecture.** All PINNs here are vanilla MLPs with `tanh`
+  activations, apart from the Fourier-feature follow-up (exp10), which was tried in 1D at
+  px=4 only, with its band tuned on the test case. SIREN and other high-frequency
+  architectures were not attempted — see "Out of scope" in `plans/implementation_plan.md`.
 - **Modest, roughly-matched tuning budget.** Both methods got similar iteration counts
   and a small amount of hyperparameter exploration, not an exhaustive search either way.
 - **1D diagnosis extrapolated to 2D.** The three mechanism experiments (exp06/07/09) run
@@ -227,7 +240,7 @@ wavefunction samples plus the known ground-state energy, 5 seeds:
   reason for some caution about extrapolating the mechanism results too.
 - **Fixed causal-weighting hyperparameters.** `exp09` uses a fixed bin count (M=10) and
   ε=10 with no further tuning, and its high-momentum instability (1 diverged seed of 5)
-  was not investigated further — both out of scope (see `IMPLEMENTATION_PLAN.md`).
+  was not investigated further — both out of scope (see `plans/implementation_plan.md`).
 - **Nearest-neighbor potential interpolation** in the 2D PINN (`qbox/pinn2d.py`) is a
   coarse way to hand the potential to autograd; a smoother interpolation might change
   the 2D numbers slightly, though not the qualitative failure.
@@ -257,7 +270,7 @@ wavefunction samples plus the known ground-state energy, 5 seeds:
 
 ```bash
 uv sync
-uv run experiments/run_all.py          # exp03, exp08, exp04-09 (skips the slow 2D ones)
+uv run experiments/run_all.py          # exp03-10 (skips the slow 2D ones)
 uv run experiments/exp01_classical_2d.py
 uv run experiments/exp02_pinn2d_comparison.py --formulation soft --w-ic 1.0 --epochs 2000
 uv run experiments/exp02_pinn2d_comparison.py --formulation hard --epochs 2000
@@ -267,4 +280,5 @@ uv run experiments/exp02_pinn2d_comparison.py --formulation hard --epochs 2000
 slowest part of the pipeline (~5 minutes per formulation for the PINN alone); run them
 explicitly if you want the 2D figures. Multi-seed error bars for `exp04`/`exp05` (Task
 2.6) are produced by re-running with `--seed 1..4`. Full verified numbers, including
-everything not shown in this README, are in `RESULTS.md`.
+everything not shown in this README, are in [`results.ipynb`](results.ipynb), which
+reads the per-run JSON in `results/`.

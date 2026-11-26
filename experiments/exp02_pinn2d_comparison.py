@@ -13,7 +13,7 @@ Supports both IC formulations:
                                        for reference, but NOT adopted (the
                                        1D investigation found it converges to
                                        a non-propagating attractor; see
-                                       RESULTS.md Task 2.1).
+                                       results.ipynb, Task 2.1).
 
 Usage:
   python experiments/exp02_pinn2d_comparison.py --formulation soft --w-ic 1.0 --epochs 2000
